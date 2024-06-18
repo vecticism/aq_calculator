@@ -1,6 +1,7 @@
 import streamlit as st
 from unidecode import unidecode
 import pandas as pd
+from io import BytesIO
 
 # Apply Alphanumeric Qabbala
 def alphanumeric_qabbala_sum(text):
@@ -28,16 +29,16 @@ def process_text(input_text):
 # Save results to Excel
 def save_to_excel(results):
     df = pd.DataFrame(results, columns=['Line', 'AQ Value'])
-    df.to_excel('aq_values.xlsx', index=False)
-    return 'aq_values.xlsx'
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Sheet1')
+        writer.save()
+    return buffer
 
 # Save results to plain text
 def save_to_text(results):
-    file_path = 'aq_values.txt'
-    with open(file_path, 'w', encoding='utf-8') as f:
-        for line, aq_value in results:
-            f.write(f"{line} | AQ Value: {aq_value}\n")
-    return file_path
+    text_output = "\n".join(f"{line} | AQ Value: {aq_value}" for line, aq_value in results)
+    return text_output.encode()
 
 # Streamlit UI
 st.title("Alphanumeric Qabbala Calculator")
@@ -51,19 +52,20 @@ if st.button("Calculate AQ Values"):
         st.write(f"{line} | AQ Value: {aq_value}")
 
     st.write("Download Options:")
-    if st.button("Export to Excel"):
-        file_path = save_to_excel(results)
-        st.write(f"Saved to {file_path}")
-        st.download_button(
-            label="Download Excel",
-            data=open(file_path, 'rb').read(),
-            file_name='aq_values.xlsx'
-        )
-    if st.button("Export to Text"):
-        file_path = save_to_text(results)
-        st.write(f"Saved to {file_path}")
-        st.download_button(
-            label="Download Text",
-            data=open(file_path, 'rb').read(),
-            file_name='aq_values.txt'
-        )
+
+    # Create download buttons for Excel and Text files
+    excel_data = save_to_excel(results)
+    st.download_button(
+        label="Download Excel",
+        data=excel_data,
+        file_name='aq_values.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    text_data = save_to_text(results)
+    st.download_button(
+        label="Download Text",
+        data=text_data,
+        file_name='aq_values.txt',
+        mime='text/plain'
+    )
