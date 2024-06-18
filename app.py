@@ -32,7 +32,8 @@ def save_to_excel(results):
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.save()
+        writer.close()
+    buffer.seek(0)
     return buffer
 
 # Save results to plain text
