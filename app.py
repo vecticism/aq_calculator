@@ -2,6 +2,9 @@ import streamlit as st
 from unidecode import unidecode
 import pandas as pd
 from io import BytesIO
+import nltk
+
+nltk.download('punkt')
 
 # Apply Alphanumeric Qabbala
 def alphanumeric_qabbala_sum(text):
@@ -17,18 +20,18 @@ def sanitize_text(text):
     return ''.join(char for char in text if char not in ['\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x0B', '\x0C', '\x0E', '\x0F', '\x10', '\x11', '\x12', '\x13', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19', '\x1A', '\x1B', '\x1C', '\x1D', '\x1E', '\x1F'])
 
 # Process text and calculate AQ values
-def process_text(input_text):
-    lines = input_text.split('\n')
-    results = []
-    for line in lines:
-        sanitized_line = sanitize_text(line)
-        aq_value = alphanumeric_qabbala_sum(sanitized_line)
-        results.append((sanitized_line, aq_value))
+def process_text(input_text, mode):
+    if mode == 'Prose':
+        sentences = nltk.sent_tokenize(input_text)
+        results = [(sanitize_text(sentence), alphanumeric_qabbala_sum(sanitize_text(sentence))) for sentence in sentences]
+    else:  # Poetry
+        lines = input_text.split('\n')
+        results = [(sanitize_text(line), alphanumeric_qabbala_sum(sanitize_text(line))) for line in lines if line.strip()]
     return results
 
 # Save results to Excel
 def save_to_excel(results):
-    df = pd.DataFrame(results, columns=['Line', 'AQ Value'])
+    df = pd.DataFrame(results, columns=['Line/Sentence', 'AQ Value'])
     buffer = BytesIO()
     with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
@@ -44,10 +47,13 @@ def save_to_text(results):
 # Streamlit UI
 st.title("Alphanumeric Qabbala Calculator")
 
+# Add a toggle button for prose or poetry
+mode = st.radio("Select mode:", ('Poetry', 'Prose'))
+
 text_input = st.text_area("Enter text:", height=300)
 
 if st.button("Calculate AQ Values"):
-    results = process_text(text_input)
+    results = process_text(text_input, mode)
     st.write("Results:")
     for line, aq_value in results:
         st.write(f"{line} | AQ Value: {aq_value}")

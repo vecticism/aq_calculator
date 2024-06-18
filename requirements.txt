@@ -2,3 +2,4 @@ streamlit
 unidecode
 pandas
 xlsxwriter
+nltk
