@@ -95,11 +95,14 @@ incremental = st.checkbox("Calculate incremental AQ values (word by word)")
 if 'text' not in st.session_state:
     st.session_state['text'] = ""
 
+if 'clear_text_trigger' not in st.session_state:
+    st.session_state['clear_text_trigger'] = False
+
 # Text input area
-text_input = st.text_area("Enter text:", height=300, key="text_input", value=st.session_state['text'])
+text_input = st.text_area("Enter text:", height=300, key="text_input", value="" if st.session_state['clear_text_trigger'] else st.session_state['text'])
 
 def clear_text():
-    st.session_state['text_input'] = ""
+    st.session_state['clear_text_trigger'] = True
     st.session_state['text'] = ""
     st.session_state['results'] = []
     st.experimental_rerun()
@@ -108,6 +111,7 @@ def clear_text():
 col1, col2 = st.columns([1, 1])
 with col1:
     if st.button("Calculate AQ Values"):
+        st.session_state['clear_text_trigger'] = False
         st.session_state['text'] = st.session_state['text_input']
         results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
         st.session_state['results'] = results
@@ -117,7 +121,7 @@ with col2:
         clear_text()
 
 # Add search and sort functionality
-if 'results' in st.session_state:
+if 'results' in st.session_state and st.session_state['results']:
     st.write("Results:")
 
     df = pd.DataFrame(st.session_state['results'], columns=['Line/Sentence', 'AQ Value'])
