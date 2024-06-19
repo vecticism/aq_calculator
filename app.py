@@ -22,9 +22,11 @@ def sanitize_text(text):
 # Process text and calculate AQ values
 def process_text(input_text, mode):
     if mode == 'Prose':
+        # Use NLTK's sentence tokenizer for prose
         sentences = nltk.sent_tokenize(input_text)
         results = [(sanitize_text(sentence), alphanumeric_qabbala_sum(sanitize_text(sentence))) for sentence in sentences]
     else:  # Poetry
+        # Split by lines for poetry
         lines = input_text.split('\n')
         results = [(sanitize_text(line), alphanumeric_qabbala_sum(sanitize_text(line))) for line in lines if line.strip()]
     return results
@@ -48,7 +50,7 @@ def save_to_text(results):
 st.title("Alphanumeric Qabbala Calculator")
 
 # Add a toggle button for prose or poetry
-mode = st.radio("Select mode:", ('Poetry (calculates by line)', 'Prose (calculates by sentence)'))
+mode = st.radio("Select mode:", ('Poetry (calculates by line breaks)', 'Prose (calculates by sentences)'))
 
 text_input = st.text_area("Enter text:", height=300)
 
