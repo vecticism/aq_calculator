@@ -82,37 +82,41 @@ if 'text' not in st.session_state:
 
 def clear_text():
     st.session_state['text'] = ""
+    st.experimental_rerun()
 
-text_input = st.text_area("Enter text:", height=300, value=st.session_state['text'])
+text_input = st.text_area("Enter text:", height=300, value=st.session_state['text'], key="text_input")
 
 col1, col2 = st.columns(2)
 with col1:
     if st.button("Calculate AQ Values"):
         results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
-        st.write("Results:")
-        for line, aq_value in results:
-            st.write(f"{line} | AQ Value: {aq_value}")
-
-        st.write("Download Options:")
-
-        # Create download buttons for Excel and Text files
-        excel_data = save_to_excel(results)
-        st.download_button(
-            label="Download Excel",
-            data=excel_data,
-            file_name='aq_values.xlsx',
-            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        )
-
-        text_data = save_to_text(results)
-        st.download_button(
-            label="Download Text",
-            data=text_data,
-            file_name='aq_values.txt',
-            mime='text/plain'
-        )
+        st.session_state['results'] = results
 
 with col2:
     if st.button("Clear Text"):
         clear_text()
-        st.experimental_rerun()
+
+# Display results if they exist in session state
+if 'results' in st.session_state:
+    st.write("Results:")
+    for line, aq_value in st.session_state['results']:
+        st.write(f"{line} | AQ Value: {aq_value}")
+
+    st.write("Download Options:")
+
+    # Create download buttons for Excel and Text files
+    excel_data = save_to_excel(st.session_state['results'])
+    st.download_button(
+        label="Download Excel",
+        data=excel_data,
+        file_name='aq_values.xlsx',
+        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    text_data = save_to_text(st.session_state['results'])
+    st.download_button(
+        label="Download Text",
+        data=text_data,
+        file_name='aq_values.txt',
+        mime='text/plain'
+    )
