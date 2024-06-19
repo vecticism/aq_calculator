@@ -84,11 +84,14 @@ def clear_text():
     st.session_state['text'] = ""
     st.experimental_rerun()
 
+# Text input area
 text_input = st.text_area("Enter text:", height=300, value=st.session_state['text'], key="text_input")
 
-col1, col2 = st.columns(2)
+# Buttons to calculate AQ values and clear text
+col1, col2 = st.columns([1, 1])
 with col1:
     if st.button("Calculate AQ Values"):
+        st.session_state['text'] = st.session_state['text_input']
         results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
         st.session_state['results'] = results
 
