@@ -48,7 +48,7 @@ def save_to_text(results):
 st.title("Alphanumeric Qabbala Calculator")
 
 # Add a toggle button for prose or poetry
-mode = st.radio("Select mode:", ('Poetry', 'Prose'))
+mode = st.radio("Select mode:", ('Poetry (calculates by line)', 'Prose (calculates by sentence)'))
 
 text_input = st.text_area("Enter text:", height=300)
 
