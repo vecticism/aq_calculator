@@ -96,7 +96,7 @@ if 'text' not in st.session_state:
     st.session_state['text'] = ""
 
 # Text input area
-text_input = st.text_area("Enter text:", height=300, key="text_input")
+text_input = st.text_area("Enter text:", height=300, key="text_input", value=st.session_state['text'])
 
 def clear_text():
     st.session_state['text_input'] = ""
