@@ -20,14 +20,37 @@ def sanitize_text(text):
     return ''.join(char for char in text if char not in ['\x00', '\x01', '\x02', '\x03', '\x04', '\x05', '\x06', '\x07', '\x08', '\x0B', '\x0C', '\x0E', '\x0F', '\x10', '\x11', '\x12', '\x13', '\x14', '\x15', '\x16', '\x17', '\x18', '\x19', '\x1A', '\x1B', '\x1C', '\x1D', '\x1E', '\x1F'])
 
 # Process text and calculate AQ values
-def process_text(input_text, mode):
+def process_text(input_text, mode, incremental):
+    results = []
     if mode == 'Prose':
         sentences = nltk.sent_tokenize(input_text)
-        results = [(sanitize_text(sentence), alphanumeric_qabbala_sum(sanitize_text(sentence))) for sentence in sentences]
+        for sentence in sentences:
+            sanitized_sentence = sanitize_text(sentence)
+            if incremental:
+                results.extend(incremental_aq_values(sanitized_sentence))
+            else:
+                aq_value = alphanumeric_qabbala_sum(sanitized_sentence)
+                results.append((sanitized_sentence, aq_value))
     else:  # Poetry
         lines = input_text.split('\n')
-        results = [(sanitize_text(line), alphanumeric_qabbala_sum(sanitize_text(line))) for line in lines if line.strip()]
+        for line in lines:
+            sanitized_line = sanitize_text(line)
+            if incremental:
+                results.extend(incremental_aq_values(sanitized_line))
+            else:
+                aq_value = alphanumeric_qabbala_sum(sanitized_line)
+                results.append((sanitized_line, aq_value))
     return results
+
+# Calculate incremental AQ values
+def incremental_aq_values(text):
+    words = text.split()
+    incremental_results = []
+    for i in range(1, len(words) + 1):
+        partial_text = ' '.join(words[:i])
+        aq_value = alphanumeric_qabbala_sum(partial_text)
+        incremental_results.append((partial_text, aq_value))
+    return incremental_results
 
 # Save results to Excel
 def save_to_excel(results):
@@ -50,29 +73,46 @@ st.title("Alphanumeric Qabbala Calculator")
 # Add a toggle button for prose or poetry
 mode = st.radio("Select mode:", ('Poetry (calculates by line breaks)', 'Prose (calculates by end of sentence)'))
 
-text_input = st.text_area("Enter text:", height=300)
+# Add a toggle button for incremental calculation
+incremental = st.checkbox("Calculate incremental AQ values (word by word)")
 
-if st.button("Calculate AQ Values"):
-    results = process_text(text_input, 'Prose' if 'Prose' in mode else 'Poetry')
-    st.write("Results:")
-    for line, aq_value in results:
-        st.write(f"{line} | AQ Value: {aq_value}")
+# Initialize session state for text input
+if 'text' not in st.session_state:
+    st.session_state['text'] = ""
 
-    st.write("Download Options:")
+def clear_text():
+    st.session_state['text'] = ""
 
-    # Create download buttons for Excel and Text files
-    excel_data = save_to_excel(results)
-    st.download_button(
-        label="Download Excel",
-        data=excel_data,
-        file_name='aq_values.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
+text_input = st.text_area("Enter text:", height=300, value=st.session_state['text'])
 
-    text_data = save_to_text(results)
-    st.download_button(
-        label="Download Text",
-        data=text_data,
-        file_name='aq_values.txt',
-        mime='text/plain'
-    )
+col1, col2 = st.columns(2)
+with col1:
+    if st.button("Calculate AQ Values"):
+        results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
+        st.write("Results:")
+        for line, aq_value in results:
+            st.write(f"{line} | AQ Value: {aq_value}")
+
+        st.write("Download Options:")
+
+        # Create download buttons for Excel and Text files
+        excel_data = save_to_excel(results)
+        st.download_button(
+            label="Download Excel",
+            data=excel_data,
+            file_name='aq_values.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+
+        text_data = save_to_text(results)
+        st.download_button(
+            label="Download Text",
+            data=text_data,
+            file_name='aq_values.txt',
+            mime='text/plain'
+        )
+
+with col2:
+    if st.button("Clear Text"):
+        clear_text()
+        st.experimental_rerun()
