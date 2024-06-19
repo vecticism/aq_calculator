@@ -95,12 +95,14 @@ incremental = st.checkbox("Calculate incremental AQ values (word by word)")
 if 'text' not in st.session_state:
     st.session_state['text'] = ""
 
-def clear_text():
-    st.session_state['text'] = ""
-    st.experimental_rerun()
-
 # Text input area
 text_input = st.text_area("Enter text:", height=300, key="text_input")
+
+def clear_text():
+    st.session_state['text_input'] = ""
+    st.session_state['text'] = ""
+    st.session_state['results'] = []
+    st.experimental_rerun()
 
 # Buttons to calculate AQ values and clear text
 col1, col2 = st.columns([1, 1])
