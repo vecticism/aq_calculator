@@ -26,20 +26,22 @@ def process_text(input_text, mode, incremental):
         sentences = nltk.sent_tokenize(input_text)
         for sentence in sentences:
             sanitized_sentence = sanitize_text(sentence)
-            if incremental:
-                results.extend(incremental_aq_values(sanitized_sentence))
-            else:
-                aq_value = alphanumeric_qabbala_sum(sanitized_sentence)
-                results.append((sanitized_sentence, aq_value))
+            if sanitized_sentence:
+                if incremental:
+                    results.extend(incremental_aq_values(sanitized_sentence))
+                else:
+                    aq_value = alphanumeric_qabbala_sum(sanitized_sentence)
+                    results.append((sanitized_sentence, aq_value))
     else:  # Poetry
         lines = input_text.split('\n')
         for line in lines:
             sanitized_line = sanitize_text(line)
-            if incremental:
-                results.extend(incremental_aq_values(sanitized_line))
-            else:
-                aq_value = alphanumeric_qabbala_sum(sanitized_line)
-                results.append((sanitized_line, aq_value))
+            if sanitized_line:
+                if incremental:
+                    results.extend(incremental_aq_values(sanitized_line))
+                else:
+                    aq_value = alphanumeric_qabbala_sum(sanitized_line)
+                    results.append((sanitized_line, aq_value))
     return results
 
 # Calculate incremental AQ values
@@ -62,13 +64,26 @@ def save_to_excel(results):
     buffer.seek(0)
     return buffer
 
+# Save results to CSV
+def save_to_csv(results):
+    df = pd.DataFrame(results, columns=['Line/Sentence', 'AQ Value'])
+    buffer = BytesIO()
+    df.to_csv(buffer, index=False)
+    buffer.seek(0)
+    return buffer
+
 # Save results to plain text
 def save_to_text(results):
     text_output = "\n".join(f"{line} | AQ Value: {aq_value}" for line, aq_value in results)
     return text_output.encode()
 
 # Streamlit UI
+st.set_page_config(page_title="AQ Calc")
+
 st.title("Alphanumeric Qabbala Calculator")
+
+# Centered links and text
+st.markdown('<div style="text-align: center;"><small>For more tools and information see: <a href="https://alektryon.github.io/gematro/" target="_blank">https://alektryon.github.io/gematro/</a></small><br><small>Inspired by <a href="https://x.com/albanoquintani" target="_blank">@albanoquintani</a> and <a href="https://x.com/xenocosmography" target="_blank">@xenocosmography</a></small></div>', unsafe_allow_html=True)
 
 # Add a toggle button for prose or poetry
 mode = st.radio("Select mode:", ('Poetry (calculates by line breaks)', 'Prose (calculates by end of sentence)'))
@@ -85,7 +100,7 @@ def clear_text():
     st.experimental_rerun()
 
 # Text input area
-text_input = st.text_area("Enter text:", height=300, value=st.session_state['text'], key="text_input")
+text_input = st.text_area("Enter text:", height=300, key="text_input")
 
 # Buttons to calculate AQ values and clear text
 col1, col2 = st.columns([1, 1])
@@ -99,27 +114,46 @@ with col2:
     if st.button("Clear Text"):
         clear_text()
 
-# Display results if they exist in session state
+# Add search and sort functionality
 if 'results' in st.session_state:
     st.write("Results:")
-    for line, aq_value in st.session_state['results']:
-        st.write(f"{line} | AQ Value: {aq_value}")
+
+    df = pd.DataFrame(st.session_state['results'], columns=['Line/Sentence', 'AQ Value'])
+
+    # Search functionality
+    search_values = st.text_input("Search AQ values (separate multiple values with commas):", "")
+    if search_values:
+        search_values = [int(value.strip()) for value in search_values.split(",") if value.strip().isdigit()]
+        df = df[df['AQ Value'].isin(search_values)]
+
+    # Sortable table
+    st.dataframe(df, width=700)
 
     st.write("Download Options:")
 
-    # Create download buttons for Excel and Text files
-    excel_data = save_to_excel(st.session_state['results'])
-    st.download_button(
-        label="Download Excel",
-        data=excel_data,
-        file_name='aq_values.xlsx',
-        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-
-    text_data = save_to_text(st.session_state['results'])
-    st.download_button(
-        label="Download Text",
-        data=text_data,
-        file_name='aq_values.txt',
-        mime='text/plain'
-    )
+    # Create download buttons for Excel, CSV, and Text files
+    col3, col4, col5 = st.columns([1, 1, 1])
+    with col3:
+        excel_data = save_to_excel(st.session_state['results'])
+        st.download_button(
+            label="Download Excel",
+            data=excel_data,
+            file_name='aq_values.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    with col4:
+        csv_data = save_to_csv(st.session_state['results'])
+        st.download_button(
+            label="Download CSV",
+            data=csv_data,
+            file_name='aq_values.csv',
+            mime='text/csv'
+        )
+    with col5:
+        text_data = save_to_text(st.session_state['results'])
+        st.download_button(
+            label="Download Text",
+            data=text_data,
+            file_name='aq_values.txt',
+            mime='text/plain'
+        )
