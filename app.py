@@ -1,10 +1,8 @@
 import streamlit as st
-from streamlit.components.v1 import html
 from unidecode import unidecode
 import pandas as pd
 from io import BytesIO
 import nltk
-import urllib.parse
 
 nltk.download('punkt')
 
@@ -79,14 +77,6 @@ def save_to_text(results):
     text_output = "\n".join(f"{line} | AQ Value: {aq_value}" for line, aq_value in results)
     return text_output.encode()
 
-# Meta tags for SEO
-meta_tags = """
-    <meta name="description" content="Calculate Alphanumeric Qabbala values for text.">
-    <meta name="keywords" content="Alphanumeric, Qabbala, Calculator, Text Analysis, Kabbalah, Thelema, Nick Land, Beast Pulse, Accelerationism, Xenocosmography">
-    <meta name="author" content="Estelina">
-"""
-html(meta_tags, height=0)
-
 # Function to render the sitemap
 def render_sitemap():
     sitemap_content = """
@@ -107,15 +97,22 @@ def render_sitemap():
     """
     return sitemap_content
 
+# Meta tags for SEO
+meta_tags = """
+    <meta name="description" content="Calculate Alphanumeric Qabbala values for text.">
+    <meta name="keywords" content="Alphanumeric, Qabbala, Calculator, Text Analysis, Kabbalah, Thelema, Nick Land, Beast Pulse, Accelerationism, Xenocosmography">
+    <meta name="author" content="Estelina">
+"""
+html(meta_tags, height=0)
+
 # Parse URL parameters
 query_params = st.experimental_get_query_params()
 if 'sitemap' in query_params:
     st.write("Serving sitemap...")
     st.markdown(render_sitemap(), unsafe_allow_html=True)
 else:
-    # Streamlit UI
+    # Main Streamlit app code
     st.set_page_config(page_title="AQ Calc", page_icon="🔢")
-
     st.title("Alphanumeric Qabbala Calculator")
 
     # Centered links and text
@@ -129,19 +126,19 @@ else:
 
     # Initialize session state for text input
     if 'text' not in st.session_state:
-    st.session_state['text'] = ""
+        st.session_state['text'] = ""
 
     if 'clear_text_trigger' not in st.session_state:
-    st.session_state['clear_text_trigger'] = False
+        st.session_state['clear_text_trigger'] = False
 
     # Text input area
     text_input = st.text_area("Enter text:", height=300, key="text_input", value="" if st.session_state['clear_text_trigger'] else st.session_state['text'])
 
     def clear_text():
-    st.session_state['clear_text_trigger'] = True
-    st.session_state['text'] = ""
-    st.session_state['results'] = []
-    st.experimental_rerun()
+        st.session_state['clear_text_trigger'] = True
+        st.session_state['text'] = ""
+        st.session_state['results'] = []
+        st.experimental_rerun()
 
     # Buttons to calculate AQ values and clear text
     col1, col2 = st.columns([1, 1])
