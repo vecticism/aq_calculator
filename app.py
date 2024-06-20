@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit.components.v1 import html
 from unidecode import unidecode
 import pandas as pd
 from io import BytesIO
@@ -78,7 +79,15 @@ def save_to_text(results):
     return text_output.encode()
 
 # Streamlit UI
-st.set_page_config(page_title="AQ Calc")
+st.set_page_config(page_title="AQ Calc", page_icon="🔢")
+
+# Meta tags for SEO
+meta_tags = """
+    <meta name="description" content="Calculate Alphanumeric Qabbala values for text.">
+    <meta name="keywords" content="Alphanumeric, Qabbala, Calculator, Text Analysis, Kabbalah, Thelema, Nick Land, Beast Pulse, Accelerationism, Xenocosmography">
+    <meta name="author" content="Estelina">
+"""
+html(meta_tags, height=0)
 
 st.title("Alphanumeric Qabbala Calculator")
 
