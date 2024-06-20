@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit.components.v1 import html
 from unidecode import unidecode
 import pandas as pd
 from io import BytesIO
@@ -77,25 +78,8 @@ def save_to_text(results):
     text_output = "\n".join(f"{line} | AQ Value: {aq_value}" for line, aq_value in results)
     return text_output.encode()
 
-# Function to render the sitemap
-def render_sitemap():
-    sitemap_content = """
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Alphanumeric Qabbala Calculator Sitemap</title>
-    </head>
-    <body>
-        <h1>Sitemap for Alphanumeric Qabbala Calculator</h1>
-        <ul>
-            <li><a href="https://aqcalc.streamlit.app/">Alphanumeric Qabbala Calculator</a></li>
-        </ul>
-    </body>
-    </html>
-    """
-    return sitemap_content
+# Streamlit UI
+st.set_page_config(page_title="AQ Calc", page_icon="🔢")
 
 # Meta tags for SEO
 meta_tags = """
@@ -105,94 +89,86 @@ meta_tags = """
 """
 html(meta_tags, height=0)
 
-# Parse URL parameters
-query_params = st.experimental_get_query_params()
-if 'sitemap' in query_params:
-    st.write("Serving sitemap...")
-    st.markdown(render_sitemap(), unsafe_allow_html=True)
-else:
-    # Main Streamlit app code
-    st.set_page_config(page_title="AQ Calc", page_icon="🔢")
-    st.title("Alphanumeric Qabbala Calculator")
+st.title("Alphanumeric Qabbala Calculator")
 
-    # Centered links and text
-    st.markdown('<div style="text-align: center;"><small>For more tools and information see: <a href="https://alektryon.github.io/gematro/" target="_blank">https://alektryon.github.io/gematro/</a></small><br><small>Inspired by <a href="https://x.com/albanoquintani" target="_blank">@albanoquintani</a> and <a href="https://x.com/xenocosmography" target="_blank">@xenocosmography</a></small></div>', unsafe_allow_html=True)
+# Centered links and text
+st.markdown('<div style="text-align: center;"><small>For more tools and information see: <a href="https://alektryon.github.io/gematro/" target="_blank">https://alektryon.github.io/gematro/</a></small><br><small>Inspired by <a href="https://x.com/albanoquintani" target="_blank">@albanoquintani</a> and <a href="https://x.com/xenocosmography" target="_blank">@xenocosmography</a></small></div>', unsafe_allow_html=True)
 
-    # Add a toggle button for prose or poetry
-    mode = st.radio("Select mode:", ('Poetry (calculates by line breaks)', 'Prose (calculates by end of sentence)'))
+# Add a toggle button for prose or poetry
+mode = st.radio("Select mode:", ('Poetry (calculates by line breaks)', 'Prose (calculates by end of sentence)'))
 
-    # Add a toggle button for incremental calculation
-    incremental = st.checkbox("Calculate incremental AQ values (word by word)")
+# Add a toggle button for incremental calculation
+incremental = st.checkbox("Calculate incremental AQ values (word by word)")
 
-    # Initialize session state for text input
-    if 'text' not in st.session_state:
-        st.session_state['text'] = ""
+# Initialize session state for text input
+if 'text' not in st.session_state:
+    st.session_state['text'] = ""
 
-    if 'clear_text_trigger' not in st.session_state:
+if 'clear_text_trigger' not in st.session_state:
+    st.session_state['clear_text_trigger'] = False
+
+# Text input area
+text_input = st.text_area("Enter text:", height=300, key="text_input", value="" if st.session_state['clear_text_trigger'] else st.session_state['text'])
+
+def clear_text():
+    st.session_state['clear_text_trigger'] = True
+    st.session_state['text'] = ""
+    st.session_state['results'] = []
+    st.experimental_rerun()
+
+# Buttons to calculate AQ values and clear text
+col1, col2 = st.columns([1, 1])
+with col1:
+    if st.button("Calculate AQ Values"):
         st.session_state['clear_text_trigger'] = False
+        st.session_state['text'] = st.session_state['text_input']
+        results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
+        st.session_state['results'] = results
 
-    # Text input area
-    text_input = st.text_area("Enter text:", height=300, key="text_input", value="" if st.session_state['clear_text_trigger'] else st.session_state['text'])
+with col2:
+    if st.button("Clear Text"):
+        clear_text()
 
-    def clear_text():
-        st.session_state['clear_text_trigger'] = True
-        st.session_state['text'] = ""
-        st.session_state['results'] = []
-        st.experimental_rerun()
+# Add search and sort functionality
+if 'results' in st.session_state and st.session_state['results']:
+    st.write("Results:")
 
-    # Buttons to calculate AQ values and clear text
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("Calculate AQ Values"):
-            st.session_state['clear_text_trigger'] = False
-            st.session_state['text'] = st.session_state['text_input']
-            results = process_text(st.session_state['text'], 'Prose' if 'Prose' in mode else 'Poetry', incremental)
-            st.session_state['results'] = results
+    df = pd.DataFrame(st.session_state['results'], columns=['Line/Sentence', 'AQ Value'])
 
-    with col2:
-        if st.button("Clear Text"):
-            clear_text()
+    # Search functionality
+    search_values = st.text_input("Search AQ values (separate multiple values with commas):", "")
+    if search_values:
+        search_values = [int(value.strip()) for value in search_values.split(",") if value.strip().isdigit()]
+        df = df[df['AQ Value'].isin(search_values)]
 
-    # Add search and sort functionality
-    if 'results' in st.session_state and st.session_state['results']:
-        st.write("Results:")
+    # Sortable table
+    st.dataframe(df, width=700)
 
-        df = pd.DataFrame(st.session_state['results'], columns=['Line/Sentence', 'AQ Value'])
+    st.write("Download Options:")
 
-        # Search functionality
-        search_values = st.text_input("Search AQ values (separate multiple values with commas):", "")
-        if search_values:
-            search_values = [int(value.strip()) for value in search_values.split(",") if value.strip().isdigit()]
-            df = df[df['AQ Value'].isin(search_values)]
-
-        # Sortable table
-        st.dataframe(df, width=700)
-
-        st.write("Download Options:")
-
-        # Create download buttons for Excel, CSV, and Text files
-        col3, col4, col5 = st.columns([1, 1, 1])
-        with col3:
-            excel_data = save_to_excel(st.session_state['results'])
-            st.download_button(
-                label="Download Excel",
-                data=excel_data,
-                file_name='aq_values.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-            )
-        with col4:
-            csv_data = save_to_csv(st.session_state['results'])
-            st.download_button(
-                label="Download CSV",
-                data=csv_data,
-                file_name='aq_values.csv',
-                mime='text/csv'
-            )
-        with col5:
-            text_data = save_to_text(st.session_state['results'])
-            st.download_button(
-                label="Download Text",
-                data=text_data,
-                file_name='aq_values.txt',
-                mime='text/plain'
-            )
+    # Create download buttons for Excel, CSV, and Text files
+    col3, col4, col5 = st.columns([1, 1, 1])
+    with col3:
+        excel_data = save_to_excel(st.session_state['results'])
+        st.download_button(
+            label="Download Excel",
+            data=excel_data,
+            file_name='aq_values.xlsx',
+            mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+    with col4:
+        csv_data = save_to_csv(st.session_state['results'])
+        st.download_button(
+            label="Download CSV",
+            data=csv_data,
+            file_name='aq_values.csv',
+            mime='text/csv'
+        )
+    with col5:
+        text_data = save_to_text(st.session_state['results'])
+        st.download_button(
+            label="Download Text",
+            data=text_data,
+            file_name='aq_values.txt',
+            mime='text/plain'
+        )
